@@ -15,11 +15,11 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "amplify:sandbox": "npx ampx sandbox",
-    "amplify:deploy": "npx ampx pipeline-deploy --branch main",
-    "amplify:generate": "npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH",
-    "amplify:codegen": "npx ampx generate graphql-client-code --format typescript",
-    "amplify:delete": "npx ampx sandbox delete"
+    "amplify:sandbox": "AWS_PROFILE=cresh-deploy AWS_REGION=eu-west-1 npx ampx sandbox",
+    "amplify:deploy": "AWS_PROFILE=cresh-deploy AWS_REGION=eu-west-1 npx ampx pipeline-deploy --branch main",
+    "amplify:generate": "AWS_PROFILE=cresh-deploy npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH",
+    "amplify:codegen": "AWS_PROFILE=cresh-deploy npx ampx generate graphql-client-code --format typescript",
+    "amplify:delete": "AWS_PROFILE=cresh-deploy AWS_REGION=eu-west-1 npx ampx sandbox delete"
   },
   "dependencies": {
     "next": "^14.2.0",

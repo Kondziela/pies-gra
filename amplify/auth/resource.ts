@@ -12,14 +12,6 @@ export const auth = defineAuth({
     email: {
       required: true,
     },
-    name: {
-      required: true,
-    },
   },
-  accountRecovery: 'email',
-  userInvitation: {
-    emailSubject: 'Zaproszenie do gry Pies!',
-    emailBody: (user) =>
-      `Witaj ${user.username}! Zostałeś zaproszony do gry Pies. Twoje tymczasowe hasło to: {####}`,
-  },
+  accountRecovery: 'EMAIL_ONLY',
 });

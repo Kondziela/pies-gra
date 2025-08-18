@@ -610,7 +610,7 @@ Autoryzacja (przykład):
 
 - Tydz. 1: Faza 0–1 (bootstrap, Auth).
 - Tydz. 2: Faza 2 (API + model) + subskrypcje ✅
-- Tydz. 3–4: Faza 3 (silnik gry + testy).
+- Tydz. 3–4: Faza 3 (silnik gry + testy) ✅
 - Tydz. 5: Faza 5 (UI fundamenty) + integracja lobby.
 - Tydz. 6: Faza 6 (interfejs gry + UX).
 - Tydz. 7: Faza 4 (presence), Faza 7 (czat).

@@ -10,8 +10,7 @@
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
     "skipLibCheck": true,
     "typeRoots": ["node_modules/@types"]
   },
