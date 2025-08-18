@@ -18,6 +18,7 @@
     "amplify:sandbox": "npx ampx sandbox",
     "amplify:deploy": "npx ampx pipeline-deploy --branch main",
     "amplify:generate": "npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH",
+    "amplify:codegen": "npx ampx generate graphql-client-code --format typescript",
     "amplify:delete": "npx ampx sandbox delete"
   },
   "dependencies": {
