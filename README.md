@@ -10,6 +10,8 @@ Aplikacja webowa do gry karciianej "Pies" dla 4 graczy, zbudowana z Next.js i AW
 - **Hosting**: AWS Amplify Hosting
 - **CI/CD**: GitHub Actions
 
+Narzędzia deweloperskie: ESLint, Prettier, Jest
+
 ## Wymagania
 
 - Node.js 18.17.0+

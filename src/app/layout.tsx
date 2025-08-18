@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { AmplifyProvider } from '@/components/providers/AmplifyProvider';
 
 export const metadata: Metadata = {
   title: 'Pies - Gra Karciana',
@@ -13,7 +15,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl">
-      <body>{children}</body>
+      <body>
+        <AmplifyProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </AmplifyProvider>
+      </body>
     </html>
   );
 }
