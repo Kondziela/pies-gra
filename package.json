@@ -14,28 +14,39 @@
     "format:check": "prettier --check .",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "amplify:sandbox": "npx ampx sandbox",
+    "amplify:deploy": "npx ampx pipeline-deploy --branch main",
+    "amplify:generate": "npx ampx generate outputs --app-id $AWS_APP_ID --branch $AWS_BRANCH",
+    "amplify:delete": "npx ampx sandbox delete"
   },
   "dependencies": {
     "next": "^14.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "aws-amplify": "^6.0.0",
-    "@aws-amplify/ui-react": "^6.1.0"
+    "@aws-amplify/ui-react": "^6.1.0",
+    "@aws-amplify/backend": "^1.0.0",
+    "@aws-amplify/backend-cli": "^1.0.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.0",
+    "@testing-library/react": "^14.2.0",
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "autoprefixer": "^10.4.18",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
+    "postcss": "^8.4.35",
     "prettier": "^3.2.0",
+    "tailwindcss": "^3.4.1",
     "typescript": "^5.3.0"
   },
   "engines": {

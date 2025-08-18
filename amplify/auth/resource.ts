@@ -1,0 +1,25 @@
+import { defineAuth } from '@aws-amplify/backend';
+
+/**
+ * Define and configure the auth resource
+ * @see https://docs.amplify.aws/gen2/build-a-backend/auth
+ */
+export const auth = defineAuth({
+  loginWith: {
+    email: true,
+  },
+  userAttributes: {
+    email: {
+      required: true,
+    },
+    name: {
+      required: true,
+    },
+  },
+  accountRecovery: 'email',
+  userInvitation: {
+    emailSubject: 'Zaproszenie do gry Pies!',
+    emailBody: (user) =>
+      `Witaj ${user.username}! Zostałeś zaproszony do gry Pies. Twoje tymczasowe hasło to: {####}`,
+  },
+});

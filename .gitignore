@@ -24,16 +24,17 @@ yarn-debug.log*
 yarn-error.log*
 
 # Local env files
-.env*.local
+.env.local
 .env
 
 # Vercel
 .vercel
 
-# Amplify
-amplify/
-.amplifyrc
-amplify.yml
+# Amplify Gen 2
+.amplify/
+amplify_outputs.json
+node_modules/
+.env
 
 # IDE
 .vscode/
