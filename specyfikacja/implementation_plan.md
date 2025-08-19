@@ -97,3 +97,137 @@
 - Subscriptions dla real-time updates
 
 ### 5.2 DynamoDB Schema
+- Struktura tabel do przechowywania stanu gier, graczy, ruchów, czatu:
+  - Games Table:
+    - gameId (PK)
+    - status: "waiting" | "playing" | "finished"
+    - players: [playerId1, playerId2, ...]
+    - currentPlayer: playerId
+    - gameState: JSON (aktualny stan gry)
+    - createdAt, updatedAt
+  - GamePlayers Table:
+    - gameId (PK)
+    - playerId (SK)
+    - playerName, avatar, color, cards, isHost, joinedAt
+  - GameMoves Table:
+    - gameId (PK)
+    - timestamp (SK)
+    - playerId, cardPlayed, actionType, resultState
+
+### 5.3 Lambda Functions
+- createGame – tworzenie nowej gry/meczu
+- joinGame – logika dołączania gracza do pokoju
+- playCard – obsługa ruchu gracza i walidacji
+- takeBuda – obsługa pobrania kart ze stołu
+- leaveGame – obsługa rozłączania
+
+### 5.4 Real-time komunikacja
+- Subskrypcje GraphQL: informacje o ruchach, turach, stanie stołu
+- Real-time czat i emotki w lobby i podczas gry (AppSync subscriptions)
+- Bieżący status wszystkich graczy (przy wejściu/wyjściu)
+
+---
+
+## Faza 6: Lobby i matchmaking
+
+### 6.1 Lobby gry
+- Widok listy graczy w pokoju (nick, avatar, status gotowości)
+- Czat tekstowy + szybkie emotki (😂 😡 👏 🐶)
+- Host może rozpocząć grę, zmienić ustawienia gry/pokoju
+- Możliwość kopiowania/udostępniania kodu pokoju/zapraszania znajomych
+- Animacje „dołączania” nowych graczy
+
+### 6.2 System pokojów
+- Generowanie krótkich, unikalnych kodów pokojów (alfanumeryczne)
+- Publiczne lobby (szybkie gry) i pokoje prywatne (gra ze znajomymi)
+- Lista publicznych pokoi do gry „na szybko”
+- System wyznaczania gospodarza i przekazywania hosta przy wyjściu
+
+### 6.3 Quick Match & automatchmaking
+- Kolejka do szybkiej gry (losowanie pokoju z oczekującymi)
+- Automatyczne dołączanie do wolnych pokojów/przypisywanie graczy
+
+---
+
+## Faza 7: Funkcjonalności dodatkowe
+
+### 7.1 Historia gier
+- Zapis zakończonych gier w bazie (DynamoDB)
+- Podgląd szczegółów: skład rąk, przebieg ruchów, wygrany, data i czas
+- Historia własnych partii na profilu gracza i prosta przeglądarka historii
+
+### 7.2 System rankingowy
+- Liczenie punktów za miejsce, aktualizowanie rankingu po zakończonej grze
+- Oddzielny ranking globalny i dla znajomych
+- Widok podsumowania po każdej grze (wyniki, statystyki, kolejność, karty swojego koloru)
+- System odznak (opcjonalnie)
+
+### 7.3 Personalizacja
+- Wybór avatara i skórki kart (minimalistyczne, klasyczne, humorystyczne)
+- Zmiana kolorystyki stołu i tła przez gracza
+- Ustawienia własnego pseudonimu do wyświetlania
+
+### 7.4 Powiadomienia push i zaproszenia
+- Powiadomienia o zaproszeniach do gry, gotowości graczy, rozpoczęciu partii
+- Integracja z AWS SNS (web push + opt-in)
+- Wynik gry, nagrody, znajomi dołączają do lobby (real-time/async)
+
+---
+
+## Faza 8: Tryb offline oraz samouczek
+
+### 8.1 Gra z botami (single player)
+- Silnik AI na różne poziomy trudności (łatwy/średni/trudny)
+- Gra w układzie 1v3 z komputerem, cała logika on-device/serverless
+- Zachowanie zasad gry dla botów, generowanie możliwych ruchów
+
+### 8.2 Samouczek interaktywny
+- Przewodnik krok po kroku po zasadach gry (tutorial overlay z podpowiedziami)
+- Animacje, strzałki, highlighty na interfejsie (np. przy Budzie, przypisywaniu koloru)
+- Mini gra demo z przykładowymi scenariuszami do rozegrania
+
+---
+
+## Faza 9: Optymalizacje, testy, monitoring
+
+### 9.1 Optymalizacja wydajności
+- Lazy loading grafik i komponentów
+- Optymalizacja re-renderowania komponentów
+- Minimalizacja wymiany danych w sieci (delta updates)
+
+### 9.2 Testowanie i QA
+- Testy jednostkowe dla logiki gry i backendu
+- Testy integracyjne API, multiplayera, autoryzacji
+- Testy E2E interfejsu
+- Testy na różnych urządzeniach (mob, desktop, tablet)
+
+### 9.3 Zarządzanie błędami i fallbacki
+- Łagodna obsługa disconnected graczy
+- Stan offline (reconnect prób, powrót do gry)
+- UI dla nieobsługiwanych sytuacji i błędów w grze
+
+### 9.4 Monitoring i analytics
+- Monitoring połączeń live (AppSync/CloudWatch)
+- Statystyki zaangażowania, liczba gier, zachowania użytkowników
+- Error reporting
+
+---
+
+## Harmonogram i priorytety MVP
+
+- **Tydzień 1-2**: Faza 1–2 (UI + autoryzacja)
+- **Tydzień 3-4**: Faza 3–4 (logika gry + interfejs gry)
+- **Tydzień 5-6**: Faza 5–6 (multiplayer, lobby, pokoje)
+- **Tydzień 7**: Faza 7 (historia, ranking, personalizacja, powiadomienia)
+- **Tydzień 8**: Faza 8 (tryb offline, tutorial)
+- **Tydzień 9-10**: Faza 9 (optymalizacja, QA, analytics, release)
+
+### Minimalne MVP:
+- Rozgrywka multiplayer 4 graczy online
+- UI zgodny z designem
+- Autoryzacja, lobby, tryb quick game
+- Gra z botami i prosty tutorial
+- Historia, podstawowy ranking, personalizacja
+- Desktop + mobile support, testy
+
+---

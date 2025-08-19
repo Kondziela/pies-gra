@@ -9,10 +9,11 @@ import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
 import LoginScreen from "./components/auth/LoginScreen";
 import SignUpScreen from "./components/auth/SignUpScreen";
 import UserProfile from "./components/auth/UserProfile";
+import GameBoard from "./components/game/GameBoard";
 
 Amplify.configure(outputs);
 
-type Screen = 'home' | 'rules' | 'settings' | 'newGame' | 'joinGame' | 'login' | 'signup' | 'profile';
+type Screen = 'home' | 'rules' | 'settings' | 'newGame' | 'joinGame' | 'login' | 'signup' | 'profile' | 'game';
 
 export default function App() {
   return (
@@ -46,7 +47,7 @@ function AppContent() {
       case 'settings':
         return <SettingsScreen onBack={() => setCurrentScreen('home')} />;
       case 'newGame':
-        return <NewGameScreen onBack={() => setCurrentScreen('home')} />;
+        return <NewGameScreen onBack={() => setCurrentScreen('home')} onNavigate={setCurrentScreen} />;
       case 'joinGame':
         return <JoinGameScreen onBack={() => setCurrentScreen('home')} />;
       case 'login':
@@ -67,6 +68,8 @@ function AppContent() {
         );
       case 'profile':
         return <UserProfile onBack={() => setCurrentScreen('home')} />;
+      case 'game':
+        return <GameBoard onBack={() => setCurrentScreen('home')} />;
       default:
         return <HomeScreen onNavigate={setCurrentScreen} />;
     }
@@ -273,7 +276,7 @@ function SettingsScreen({ onBack }: BackNavigationProps) {
   );
 }
 
-function NewGameScreen({ onBack }: BackNavigationProps) {
+function NewGameScreen({ onBack, onNavigate }: BackNavigationProps & NavigationProps) {
   return (
     <div className="new-game-screen">
       <div className="screen-header">
@@ -305,7 +308,10 @@ function NewGameScreen({ onBack }: BackNavigationProps) {
               <option value="hard">Trudny</option>
             </select>
           </div>
-          <button className="action-button secondary">
+          <button 
+            className="action-button secondary"
+            onClick={() => onNavigate('game')}
+          >
             Start gry
           </button>
         </div>

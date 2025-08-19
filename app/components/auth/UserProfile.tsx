@@ -12,6 +12,7 @@ interface UserAttributes {
   email?: string;
   nickname?: string;
   preferred_username?: string;
+  preferredUsername?: string;
 }
 
 export default function UserProfile({ onBack }: UserProfileProps) {
@@ -38,7 +39,7 @@ export default function UserProfile({ onBack }: UserProfileProps) {
       setAttributes(userAttributes);
       setEditForm({
         nickname: userAttributes.nickname || '',
-        preferred_username: userAttributes.preferred_username || '',
+        preferred_username: userAttributes.preferred_username || userAttributes.preferredUsername || '',
       });
     } catch (error) {
       console.error('Error loading user attributes:', error);
@@ -64,7 +65,7 @@ export default function UserProfile({ onBack }: UserProfileProps) {
       await updateUserAttributes({
         userAttributes: {
           nickname: editForm.nickname,
-          preferred_username: editForm.preferred_username || editForm.nickname,
+          preferredUsername: editForm.preferred_username || editForm.nickname,
         },
       });
 
@@ -122,9 +123,9 @@ export default function UserProfile({ onBack }: UserProfileProps) {
               </h2>
               <p className="profile-email">{attributes.email}</p>
 
-              {attributes.preferred_username && (
+              {(attributes.preferred_username || attributes.preferredUsername) && (
                 <p className="profile-preferred">
-                  Wyświetlany jako: {attributes.preferred_username}
+                  Wyświetlany jako: {attributes.preferred_username || attributes.preferredUsername}
                 </p>
               )}
 
