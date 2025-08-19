@@ -56,15 +56,36 @@ Powiadomienia push – np. „Twoi znajomi czekają na Ciebie w grze PIES!”.
 Personalizacja – zmiana wyglądu kart (skórki: klasyczne, minimalistyczne, humorystyczne), avatarów, kolorów stołu.
 Ranking online – globalna i ze znajomymi.
 5. Architektura techniczna (skrótowo)
-   Front-end: React Native / Flutter (cross-platform iOS + Android).
-   Back-end: Node.js + WebSockety (real-time multiplayer).
-   Baza danych: PostgreSQL / Firebase (użytkownicy, statystyki).
-   Hosting: AWS / Google Cloud (serwer gier, autoryzacja).
-   Matchmaking: system pokoi (publiczne/prywatne) + tryb „gra ze znajomymi”.
-6. Design UI (propozycja stylu)
-   Motyw ciemny z kontrastowymi kolorami kart (podobnie jak Hearthstone czy Uno Online).
-   Minimalistyczne ikony kart (np. ♠ ♥ ♦ ♣), czytelne oznaczenia kolorów przypisanych do graczy.
-   Animacje:
-   ruch karty na stół,
-   efekt zbierania Buda (cały stół przesuwa się do gracza),
-   celebracja przy zakończeniu gry (wybuch konfetti, szczekający piesek 🐶 jako easter egg).
+   Całość rozwiązania została zaprojektowana w oparciu o AWS Amplify Gen 2:
+
+   - Front-end: React/Next.js wdrażany i hostowany przez AWS Amplify Hosting (CI/CD, custom domains, hosting statyczny).
+   - Zarządzanie użytkownikami i autoryzacją: AWS Cognito z pełną integracją Amplify Gen 2 (rejestracja, logowanie, social logins, reset haseł).
+   - Komunikacja i backend: Funkcje (Lambda) Amplify Gen 2 do logiki gry i przetwarzania zdarzeń, integracje WebSocket do obsługi gry realtime.
+   - Baza danych: AWS DynamoDB – przechowywanie użytkowników, stanu gier, historii partii, wyników oraz czatu.
+   - API GraphQL: AWS AppSync z subskrypcjami do komunikacji o stanie gry w czasie rzeczywistym (ruchy graczy, ogłoszenia systemowe).
+   - Powiadomienia: Integracja z Amazon SNS lub Amplify Notifications.
+   - Matchmaking: funkcje zarządzane przez Lambdy oraz DynamoDB (system pokoi publicznych/prywatnych, gra ze znajomymi).
+   - Monitorowanie i analytics: Automatyczne monitorowanie aplikacji przez Amplify Gen 2 oraz integrację ze Stackdriver/AWS CloudWatch.
+   - Infrastrukturę zarządza się bezpośrednio przez pliki backendowe Amplify Gen 2 (Infrastructure as Code).
+
+   Całość architektury działa w pełni serverless i zgodnie z najlepszymi praktykami Amplify Gen 2.
+6. Design UI
+   Szczegółowy design interfejsu użytkownika jest dostępny w pliku `design_aplikacji.png`.
+
+   Główne założenia designu:
+   - Nowoczesny, czytelny interfejs dostosowany do gry karciańej
+   - Intuicyjne rozmieszczenie elementów interfejsu
+   - Czytelne oznaczenia kart i stołu gry
+   - Responsywny design działający na różnych urządzeniach
+
+   Kluczowe elementy wizualne:
+   - Centralne pole gry (stół) z kartami
+   - Panel gracza na dole z kartami na ręce
+   - Informacje o stanie gry i innych graczach
+   - System kolorów przypisanych do graczy
+   - Przyciski akcji i nawigacji
+
+   Animacje i efekty:
+   - Ruch karty na stół
+   - Efekt zbierania Buda (cały stół przesuwa się do gracza)
+   - Celebracja przy zakończeniu gry (wybuch konfetti, szczekający piesek 🐶 jako easter egg)
