@@ -4,6 +4,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Card, { CardData } from './Card';
 import { GameEngine, GameState, Player } from './GameEngine';
 import { useAuth } from '../auth/AuthProvider';
+import ErrorToast from './ErrorToast';
 
 interface GameBoardProps {
   onBack: () => void;
@@ -21,7 +22,6 @@ export default function GameBoard({ onBack }: GameBoardProps) {
     ];
 
     const engine = new GameEngine('demo-game', mockPlayers);
-    engine.startGame();
     return engine;
   });
 
@@ -30,27 +30,65 @@ export default function GameBoard({ onBack }: GameBoardProps) {
   const [availableCards, setAvailableCards] = useState<CardData[]>([]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [draggedCard, setDraggedCard] = useState<CardData | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [showErrorToast, setShowErrorToast] = useState(false);
+  const [turnTimer, setTurnTimer] = useState<number>(30); // 30 sekund na turę
+  const [isAnimatingBuda, setIsAnimatingBuda] = useState(false);
+  const [isAnimatingDeal, setIsAnimatingDeal] = useState(false);
 
   const tableRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentPlayer = gameState.players.find(p => p.id === (user?.userId || 'player1'));
   const isMyTurn = gameEngine.getCurrentPlayer().id === (user?.userId || 'player1');
+  const canTakeBuda = currentPlayer ? gameEngine.canTakeBuda(currentPlayer.id) : false;
 
-  useEffect(() => {
-    updateAvailableCards();
-  }, [gameState, isMyTurn]);
-
-  const updateAvailableCards = () => {
+  const updateAvailableCards = useCallback(() => {
     if (isMyTurn && currentPlayer) {
       const available = gameEngine.getAvailableCards(currentPlayer.id);
       setAvailableCards(available);
     } else {
       setAvailableCards([]);
     }
-  };
+  }, [isMyTurn, currentPlayer, gameEngine]);
+
+  const showError = useCallback((message: string) => {
+    setErrorMessage(message);
+    setShowErrorToast(true);
+  }, []);
+
+  const handleTakeBuda = useCallback(() => {
+    if (!currentPlayer) return;
+
+    const success = gameEngine.takeBuda(currentPlayer.id);
+    if (success) {
+      // Animacja zbierania Budy
+      setIsAnimatingBuda(true);
+
+      setTimeout(() => {
+        setGameState(gameEngine.getGameState());
+        updateAvailableCards();
+        setIsAnimatingBuda(false);
+      }, 1000);
+    } else {
+      showError('Nie można wziąć Budy w tej sytuacji.');
+    }
+  }, [currentPlayer, gameEngine, showError, updateAvailableCards]);
 
   const handleCardClick = useCallback((card: CardData) => {
-    if (!isMyTurn || !availableCards.find(c => c.id === card.id)) {
+    if (!isMyTurn) {
+      showError('Poczekaj na swoją kolej!');
+      return;
+    }
+
+    if (!availableCards.find(c => c.id === card.id)) {
+      if (gameState.table.length === 0) {
+        showError('Możesz zagrać dowolną kartę na początek tury.');
+      } else if (!gameState.colorsAssigned) {
+        showError('Musisz przebić kartę wyższą tego samego koloru lub zagrać Damę Trefl.');
+      } else {
+        showError('Nie możesz przebić tej karty. Zagraj wyższą kartę tego samego koloru lub swojego koloru.');
+      }
       return;
     }
 
@@ -59,7 +97,7 @@ export default function GameBoard({ onBack }: GameBoardProps) {
     } else {
       setSelectedCard(card);
     }
-  }, [isMyTurn, availableCards, selectedCard]);
+  }, [isMyTurn, availableCards, selectedCard, gameState, showError]);
 
   const handlePlayCard = useCallback(() => {
     if (!selectedCard || !currentPlayer) return;
@@ -70,18 +108,52 @@ export default function GameBoard({ onBack }: GameBoardProps) {
       setSelectedCard(null);
       setShowConfirmDialog(false);
       updateAvailableCards();
+    } else {
+      showError('Nie można zagrać tej karty. Spróbuj innej.');
+      setShowConfirmDialog(false);
     }
-  }, [selectedCard, currentPlayer, gameEngine]);
+  }, [selectedCard, currentPlayer, gameEngine, showError, updateAvailableCards]);
 
-  const handleTakeBuda = useCallback(() => {
-    if (!currentPlayer) return;
-
-    const success = gameEngine.takeBuda(currentPlayer.id);
-    if (success) {
+  // Animacja rozdawania kart przy starcie
+  useEffect(() => {
+    setIsAnimatingDeal(true);
+    const dealTimer = setTimeout(() => {
+      gameEngine.startGame();
       setGameState(gameEngine.getGameState());
-      updateAvailableCards();
+      setIsAnimatingDeal(false);
+    }, 2000);
+
+    return () => clearTimeout(dealTimer);
+  }, [gameEngine]);
+
+  useEffect(() => {
+    updateAvailableCards();
+
+    // Reset timer przy zmianie tury
+    if (isMyTurn) {
+      setTurnTimer(30);
+      if (timerRef.current) clearInterval(timerRef.current);
+
+      timerRef.current = setInterval(() => {
+        setTurnTimer(prev => {
+          if (prev <= 1) {
+            // Auto-skip turn lub auto-take buda
+            if (canTakeBuda && currentPlayer) {
+              handleTakeBuda();
+            }
+            return 30;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
     }
-  }, [currentPlayer, gameEngine]);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [gameState, isMyTurn, canTakeBuda, currentPlayer, handleTakeBuda, updateAvailableCards]);
 
   const handleCardDragStart = useCallback((card: CardData) => (e: React.DragEvent) => {
     if (!isMyTurn || !availableCards.find(c => c.id === card.id)) {
@@ -102,16 +174,16 @@ export default function GameBoard({ onBack }: GameBoardProps) {
       if (success) {
         setGameState(gameEngine.getGameState());
         updateAvailableCards();
+      } else {
+        showError('Nie można zagrać tej karty na stół.');
       }
     }
     setDraggedCard(null);
-  }, [draggedCard, currentPlayer, gameEngine]);
+  }, [draggedCard, currentPlayer, gameEngine, showError, updateAvailableCards]);
 
   const handleTableDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
   }, []);
-
-  const canTakeBuda = currentPlayer ? gameEngine.canTakeBuda(currentPlayer.id) : false;
 
   const getPlayerPosition = (position: number) => {
     const positions = ['bottom', 'left', 'top', 'right'];
@@ -180,6 +252,11 @@ export default function GameBoard({ onBack }: GameBoardProps) {
           <span className="turn-info">
             {isMyTurn ? 'Twoja kolej' : `Kolej: ${gameEngine.getCurrentPlayer().name}`}
           </span>
+          {isMyTurn && (
+            <div className={`turn-timer ${turnTimer <= 10 ? 'timer-warning' : ''}`}>
+              ⏱️ {turnTimer}s
+            </div>
+          )}
         </div>
       </div>
 
@@ -204,7 +281,7 @@ export default function GameBoard({ onBack }: GameBoardProps) {
                 <span>Zagraj pierwszą kartę</span>
               </div>
             ) : (
-              <div className="table-cards">
+              <div className={`table-cards ${isAnimatingBuda ? 'buda-animation' : ''}`}>
                 {gameState.table.map((card, index) => (
                   <Card
                     key={`${card.id}-${index}`}
@@ -253,9 +330,11 @@ export default function GameBoard({ onBack }: GameBoardProps) {
                     onDragEnd={handleCardDragEnd}
                     className="hand-card"
                     style={{
+                      '--card-offset': `${(index - currentPlayer.cards.length/2) * 60}px`,
+                      '--card-rotation': `${(index - currentPlayer.cards.length/2) * 5}deg`,
                       transform: `translateX(${(index - currentPlayer.cards.length/2) * 60}px) translateY(${isSelected ? -20 : 0}px) rotate(${(index - currentPlayer.cards.length/2) * 5}deg)`,
                       zIndex: isSelected ? 100 : index
-                    }}
+                    } as React.CSSProperties}
                   />
                 );
               })}
@@ -305,6 +384,30 @@ export default function GameBoard({ onBack }: GameBoardProps) {
           </div>
         </div>
       )}
+
+      {/* Animacja rozdawania kart */}
+      {isAnimatingDeal && (
+        <div className="dealing-animation">
+          <div className="dealing-message">
+            <h3>Rozdawanie kart...</h3>
+            <div className="dealing-cards">
+              {[1,2,3,4,5,6].map(i => (
+                <div key={i} className="dealing-card" style={{ animationDelay: `${i * 0.2}s` }}>
+                  🂠
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Toast */}
+      <ErrorToast
+        message={errorMessage}
+        isVisible={showErrorToast}
+        onClose={() => setShowErrorToast(false)}
+        duration={4000}
+      />
     </div>
   );
 }
