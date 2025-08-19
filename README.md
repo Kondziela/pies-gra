@@ -1,20 +1,25 @@
-# Pies - Gra Karciana 🐶
+## AWS Amplify Next.js (App Router) Starter Template
 
-Aplikacja webowa do gry karciianej "Pies" dla 4 graczy, zbudowana z Next.js i AWS Amplify.
+This repository provides a starter template for creating applications using Next.js (App Router) and AWS Amplify, emphasizing easy setup for authentication, API, and database capabilities.
 
-## Technologie
+## Overview
 
-- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
-- **Backend**: AWS Amplify, AppSync GraphQL, DynamoDB, Lambda
-- **Auth**: AWS Cognito
-- **Hosting**: AWS Amplify Hosting
-- **CI/CD**: GitHub Actions
+This template equips you with a foundational Next.js application integrated with AWS Amplify, streamlined for scalability and performance. It is ideal for developers looking to jumpstart their project with pre-configured AWS services like Cognito, AppSync, and DynamoDB.
 
-Narzędzia deweloperskie: ESLint, Prettier, Jest
+## Features
 
-## Wymagania
+- **Authentication**: Setup with Amazon Cognito for secure user authentication.
+- **API**: Ready-to-use GraphQL endpoint with AWS AppSync.
+- **Database**: Real-time database powered by Amazon DynamoDB.
 
-- Node.js 18.17.0+
-- npm lub yarn
+## Deploying to AWS
 
-## Instalacja
+For detailed instructions on deploying your application, refer to the [deployment section](https://docs.amplify.aws/nextjs/start/quickstart/nextjs-app-router-client-components/#deploy-a-fullstack-app-to-aws) of our documentation.
+
+## Security
+
+See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
+
+## License
+
+This library is licensed under the MIT-0 License. See the LICENSE file.
