@@ -1,52 +1,285 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
-import "./../app/app.css";
+import { useState } from "react";
 import { Amplify } from "aws-amplify";
 import outputs from "@/amplify_outputs.json";
 import "@aws-amplify/ui-react/styles.css";
+import "./globals.css";
 
 Amplify.configure(outputs);
 
-const client = generateClient<Schema>();
+type Screen = 'home' | 'rules' | 'settings' | 'newGame' | 'joinGame';
 
 export default function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
+  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
 
-  function listTodos() {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
-    });
-  }
-
-  useEffect(() => {
-    listTodos();
-  }, []);
-
-  function createTodo() {
-    client.models.Todo.create({
-      content: window.prompt("Todo content"),
-    });
-  }
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'home':
+        return <HomeScreen onNavigate={setCurrentScreen} />;
+      case 'rules':
+        return <RulesScreen onBack={() => setCurrentScreen('home')} />;
+      case 'settings':
+        return <SettingsScreen onBack={() => setCurrentScreen('home')} />;
+      case 'newGame':
+        return <NewGameScreen onBack={() => setCurrentScreen('home')} />;
+      case 'joinGame':
+        return <JoinGameScreen onBack={() => setCurrentScreen('home')} />;
+      default:
+        return <HomeScreen onNavigate={setCurrentScreen} />;
+    }
+  };
 
   return (
-    <main>
-      <h1>My todos</h1>
-      <button onClick={createTodo}>+ new</button>
-      <ul>
-        {todos.map((todo) => (
-          <li key={todo.id}>{todo.content}</li>
-        ))}
-      </ul>
-      <div>
-        🥳 App successfully hosted. Try creating a new todo.
-        <br />
-        <a href="https://docs.amplify.aws/nextjs/start/quickstart/nextjs-app-router-client-components/">
-          Review next steps of this tutorial.
-        </a>
-      </div>
+    <main className="app-container">
+      {renderScreen()}
     </main>
+  );
+}
+
+interface NavigationProps {
+  onNavigate: (screen: Screen) => void;
+}
+
+interface BackNavigationProps {
+  onBack: () => void;
+}
+
+function HomeScreen({ onNavigate }: NavigationProps) {
+  return (
+    <div className="home-screen">
+      <div className="game-header">
+        <h1 className="game-title">PIES</h1>
+        <p className="game-subtitle">Gra karciana dla 4 graczy</p>
+      </div>
+
+      <div className="main-menu">
+        <button 
+          className="menu-button primary"
+          onClick={() => onNavigate('newGame')}
+        >
+          ➕ Nowa gra
+        </button>
+
+        <button 
+          className="menu-button secondary"
+          onClick={() => onNavigate('joinGame')}
+        >
+          🎮 Dołącz do gry
+        </button>
+
+        <button 
+          className="menu-button tertiary"
+          onClick={() => onNavigate('rules')}
+        >
+          📖 Zasady gry
+        </button>
+
+        <button 
+          className="menu-button tertiary"
+          onClick={() => onNavigate('settings')}
+        >
+          ⚙️ Ustawienia
+        </button>
+      </div>
+
+      <div className="footer">
+        <p className="version">v1.0.0</p>
+      </div>
+    </div>
+  );
+}
+
+function RulesScreen({ onBack }: BackNavigationProps) {
+  return (
+    <div className="rules-screen">
+      <div className="screen-header">
+        <button className="back-button" onClick={onBack}>
+          ← Powrót
+        </button>
+        <h1 className="screen-title">Zasady gry</h1>
+      </div>
+
+      <div className="rules-content">
+        <div className="rule-section">
+          <h2>Cel gry</h2>
+          <p>
+            Celem jest jak najszybsze pozbycie się kart z ręki oraz zachowanie w grze 
+            możliwie największej liczby kart swojego koloru. Gra kończy się, gdy gracz 
+            zmuszony jest na koniec rozdania odrzucić z gry swojego Asa.
+          </p>
+        </div>
+
+        <div className="rule-section">
+          <h2>Przygotowanie</h2>
+          <ul>
+            <li>Liczba graczy: 4</li>
+            <li>Talia: 24 karty (od 9 do Asa w każdym kolorze)</li>
+            <li>Rozdanie: wszystkie karty, po 6 na gracza</li>
+            <li>Pierwszą turę rozpoczyna 9 Karo</li>
+          </ul>
+        </div>
+
+        <div className="rule-section">
+          <h2>Przebieg gry</h2>
+          <ul>
+            <li>Gra przebiega zgodnie z ruchem wskazówek zegara</li>
+            <li>Gracz musi przebić kartę wyższą tego samego koloru lub Damą Trefl</li>
+            <li>Po przebiciu obowiązkowo dokłada drugą kartę</li>
+            <li>Jeśli nie może przebić, bierze Budę (wszystkie karty ze stołu)</li>
+          </ul>
+        </div>
+
+        <div className="rule-section">
+          <h2>Dama Trefl</h2>
+          <p>
+            Gdy ktoś zagra Damę Trefl, przypisuje kolory: Trefl (atut) → Pik → Kier → Karo.
+            Od tego momentu gracze mogą przebijać dowolną kartę swoim kolorem.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsScreen({ onBack }: BackNavigationProps) {
+  return (
+    <div className="settings-screen">
+      <div className="screen-header">
+        <button className="back-button" onClick={onBack}>
+          ← Powrót
+        </button>
+        <h1 className="screen-title">Ustawienia</h1>
+      </div>
+
+      <div className="settings-content">
+        <div className="setting-group">
+          <h3>Język</h3>
+          <select className="setting-select">
+            <option value="pl">Polski</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
+        <div className="setting-group">
+          <h3>Motyw</h3>
+          <div className="setting-radio-group">
+            <label>
+              <input type="radio" name="theme" value="light" defaultChecked />
+              Jasny
+            </label>
+            <label>
+              <input type="radio" name="theme" value="dark" />
+              Ciemny
+            </label>
+          </div>
+        </div>
+
+        <div className="setting-group">
+          <h3>Dźwięki</h3>
+          <label className="setting-checkbox">
+            <input type="checkbox" defaultChecked />
+            Efekty dźwiękowe
+          </label>
+        </div>
+
+        <div className="setting-group">
+          <h3>Powiadomienia</h3>
+          <label className="setting-checkbox">
+            <input type="checkbox" defaultChecked />
+            Powiadomienia push
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NewGameScreen({ onBack }: BackNavigationProps) {
+  return (
+    <div className="new-game-screen">
+      <div className="screen-header">
+        <button className="back-button" onClick={onBack}>
+          ← Powrót
+        </button>
+        <h1 className="screen-title">Nowa gra</h1>
+      </div>
+
+      <div className="new-game-content">
+        <div className="game-option">
+          <h3>Utwórz pokój</h3>
+          <p>Stwórz prywatny pokój i zaproś znajomych</p>
+          <button className="action-button primary">
+            Utwórz pokój
+          </button>
+        </div>
+
+        <div className="divider">lub</div>
+
+        <div className="game-option">
+          <h3>Gra z botami</h3>
+          <p>Trenuj z komputerowymi przeciwnikami</p>
+          <div className="difficulty-selection">
+            <label>Poziom trudności:</label>
+            <select className="difficulty-select">
+              <option value="easy">Łatwy</option>
+              <option value="medium">Średni</option>
+              <option value="hard">Trudny</option>
+            </select>
+          </div>
+          <button className="action-button secondary">
+            Start gry
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function JoinGameScreen({ onBack }: BackNavigationProps) {
+  const [gameCode, setGameCode] = useState('');
+
+  return (
+    <div className="join-game-screen">
+      <div className="screen-header">
+        <button className="back-button" onClick={onBack}>
+          ← Powrót
+        </button>
+        <h1 className="screen-title">Dołącz do gry</h1>
+      </div>
+
+      <div className="join-game-content">
+        <div className="join-option">
+          <h3>Kod pokoju</h3>
+          <p>Wprowadź kod otrzymany od znajomego</p>
+          <div className="code-input-group">
+            <input
+              type="text"
+              placeholder="Wprowadź kod..."
+              value={gameCode}
+              onChange={(e) => setGameCode(e.target.value)}
+              className="code-input"
+              maxLength={6}
+            />
+            <button 
+              className="action-button primary"
+              disabled={gameCode.length < 4}
+            >
+              Dołącz
+            </button>
+          </div>
+        </div>
+
+        <div className="divider">lub</div>
+
+        <div className="join-option">
+          <h3>Szybka gra</h3>
+          <p>Automatyczne dopasowanie z innymi graczami</p>
+          <button className="action-button secondary">
+            🎲 Losuj przeciwników
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
