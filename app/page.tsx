@@ -5,13 +5,37 @@ import { Amplify } from "aws-amplify";
 import outputs from "@/amplify_outputs.json";
 import "@aws-amplify/ui-react/styles.css";
 import "./globals.css";
+import { AuthProvider, useAuth } from "./components/auth/AuthProvider";
+import LoginScreen from "./components/auth/LoginScreen";
+import SignUpScreen from "./components/auth/SignUpScreen";
+import UserProfile from "./components/auth/UserProfile";
 
 Amplify.configure(outputs);
 
-type Screen = 'home' | 'rules' | 'settings' | 'newGame' | 'joinGame';
+type Screen = 'home' | 'rules' | 'settings' | 'newGame' | 'joinGame' | 'login' | 'signup' | 'profile';
 
 export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <main className="app-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Ładowanie aplikacji...</p>
+        </div>
+      </main>
+    );
+  }
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -25,6 +49,24 @@ export default function App() {
         return <NewGameScreen onBack={() => setCurrentScreen('home')} />;
       case 'joinGame':
         return <JoinGameScreen onBack={() => setCurrentScreen('home')} />;
+      case 'login':
+        return (
+          <LoginScreen 
+            onBack={() => setCurrentScreen('home')}
+            onSwitchToSignUp={() => setCurrentScreen('signup')}
+            onLoginSuccess={() => setCurrentScreen('home')}
+          />
+        );
+      case 'signup':
+        return (
+          <SignUpScreen 
+            onBack={() => setCurrentScreen('home')}
+            onSwitchToLogin={() => setCurrentScreen('login')}
+            onSignUpSuccess={() => setCurrentScreen('login')}
+          />
+        );
+      case 'profile':
+        return <UserProfile onBack={() => setCurrentScreen('home')} />;
       default:
         return <HomeScreen onNavigate={setCurrentScreen} />;
     }
@@ -46,27 +88,63 @@ interface BackNavigationProps {
 }
 
 function HomeScreen({ onNavigate }: NavigationProps) {
+  const { isAuthenticated, user } = useAuth();
+
   return (
     <div className="home-screen">
       <div className="game-header">
         <h1 className="game-title">PIES</h1>
         <p className="game-subtitle">Gra karciana dla 4 graczy</p>
+
+        {isAuthenticated && user && (
+          <div className="user-info">
+            <p className="welcome-message">
+              Witaj, <span className="username">{user.username}</span>!
+            </p>
+            <button 
+              className="profile-link"
+              onClick={() => onNavigate('profile')}
+            >
+              👤 Profil
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="main-menu">
-        <button 
-          className="menu-button primary"
-          onClick={() => onNavigate('newGame')}
-        >
-          ➕ Nowa gra
-        </button>
+        {isAuthenticated ? (
+          <>
+            <button 
+              className="menu-button primary"
+              onClick={() => onNavigate('newGame')}
+            >
+              ➕ Nowa gra
+            </button>
 
-        <button 
-          className="menu-button secondary"
-          onClick={() => onNavigate('joinGame')}
-        >
-          🎮 Dołącz do gry
-        </button>
+            <button 
+              className="menu-button secondary"
+              onClick={() => onNavigate('joinGame')}
+            >
+              🎮 Dołącz do gry
+            </button>
+          </>
+        ) : (
+          <>
+            <button 
+              className="menu-button primary"
+              onClick={() => onNavigate('login')}
+            >
+              🔐 Zaloguj się
+            </button>
+
+            <button 
+              className="menu-button secondary"
+              onClick={() => onNavigate('signup')}
+            >
+              📝 Zarejestruj się
+            </button>
+          </>
+        )}
 
         <button 
           className="menu-button tertiary"
