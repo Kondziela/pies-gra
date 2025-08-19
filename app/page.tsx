@@ -25,6 +25,7 @@ export default function App() {
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+  const [gameDifficulty, setGameDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -276,7 +277,29 @@ function SettingsScreen({ onBack }: BackNavigationProps) {
   );
 }
 
-function NewGameScreen({ onBack, onNavigate }: BackNavigationProps & NavigationProps) {
+interface NewGameProps extends BackNavigationProps, NavigationProps {
+  onSetDifficulty?: (difficulty: 'easy' | 'medium' | 'hard') => void;
+}
+
+function NewGameScreen({ onBack, onNavigate, onSetDifficulty }: NewGameProps) {
+  const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+
+  const handleStartBotGame = () => {
+    // Użyj localStorage jako fallback
+    try {
+      if (onSetDifficulty && typeof onSetDifficulty === 'function') {
+        onSetDifficulty(selectedDifficulty);
+      } else {
+        // Fallback: zapisz w localStorage
+        localStorage.setItem('gameDifficulty', selectedDifficulty);
+      }
+    } catch (error) {
+      console.error('Error setting difficulty:', error);
+      localStorage.setItem('gameDifficulty', selectedDifficulty);
+    }
+    onNavigate('game');
+  };
+
   return (
     <div className="new-game-screen">
       <div className="screen-header">
@@ -302,17 +325,21 @@ function NewGameScreen({ onBack, onNavigate }: BackNavigationProps & NavigationP
           <p>Trenuj z komputerowymi przeciwnikami</p>
           <div className="difficulty-selection">
             <label>Poziom trudności:</label>
-            <select className="difficulty-select">
-              <option value="easy">Łatwy</option>
-              <option value="medium">Średni</option>
-              <option value="hard">Trudny</option>
+            <select 
+              className="difficulty-select"
+              value={selectedDifficulty}
+              onChange={(e) => setSelectedDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
+            >
+              <option value="easy">Łatwy - Boty grają losowo</option>
+              <option value="medium">Średni - Boty mają podstawową strategię</option>
+              <option value="hard">Trudny - Boty używają zaawansowanej strategii</option>
             </select>
           </div>
           <button 
             className="action-button secondary"
-            onClick={() => onNavigate('game')}
+            onClick={handleStartBotGame}
           >
-            Start gry
+            🤖 Start gry z botami
           </button>
         </div>
       </div>

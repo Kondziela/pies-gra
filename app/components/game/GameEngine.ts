@@ -31,6 +31,8 @@ export interface GameState {
   turn: number;
   lastWinner?: string;
   discardedCards: CardData[];
+  waitingForSecondCard: boolean; // Czy gracz musi dołożyć drugą kartę po przebiciu
+  secondCardPlayerId?: string; // ID gracza który musi dołożyć drugą kartę
 }
 
 export class GameEngine {
@@ -51,7 +53,9 @@ export class GameEngine {
       colorsAssigned: false,
       round: 1,
       turn: 1,
-      discardedCards: []
+      discardedCards: [],
+      waitingForSecondCard: false,
+      secondCardPlayerId: undefined
     };
   }
 
@@ -131,6 +135,12 @@ export class GameEngine {
       return true;
     }
 
+    // DRUGA KARTA PO PRZEBICIU - może być DOWOLNA!
+    if (this.state.waitingForSecondCard && this.state.secondCardPlayerId === playerId) {
+      console.log(`✅ ${this.getPlayerName(playerId)} może zagrać dowolną kartę jako drugą po przebiciu`);
+      return true;
+    }
+
     const topCard = this.state.table[this.state.table.length - 1];
 
     // Dama trefl może przebić każdą kartę (oprócz wyższych trefli)
@@ -164,10 +174,24 @@ export class GameEngine {
   // Zagranie karty
   public playCard(playerId: string, card: CardData): boolean {
     if (!this.canPlayCard(playerId, card)) {
+      console.log(`❌ ${this.getPlayerName(playerId)} nie może zagrać ${this.formatCard(card)}`);
       return false;
     }
 
     const player = this.state.players.find(p => p.id === playerId)!;
+    const topCard = this.state.table.length > 0 ? this.state.table[this.state.table.length - 1] : null;
+
+    // Sprawdź czy to druga karta po przebiciu
+    const isSecondCard = this.state.waitingForSecondCard && this.state.secondCardPlayerId === playerId;
+
+    // Log szczegółów ruchu
+    if (isSecondCard) {
+      console.log(`🎯 ${this.getPlayerName(playerId)} dokłada drugą kartę: ${this.formatCard(card)} (dowolna po przebiciu)`);
+    } else if (topCard) {
+      console.log(`🎯 ${this.getPlayerName(playerId)} zagrywa ${this.formatCard(card)} na ${this.formatCard(topCard)}`);
+    } else {
+      console.log(`🎯 ${this.getPlayerName(playerId)} rozpoczyna turę kartą ${this.formatCard(card)}`);
+    }
 
     // Usuń kartę z ręki gracza
     player.cards = player.cards.filter(c => c.id !== card.id);
@@ -185,14 +209,28 @@ export class GameEngine {
 
     // Sprawdź czy to Dama trefl - przypisz kolory
     if (card.suit === 'trefl' && card.rank === 'Q' && !this.state.colorsAssigned) {
+      console.log(`👑 ${this.getPlayerName(playerId)} zagrał Damę Trefl - przypisywanie kolorów!`);
       this.assignColors(playerId);
+    }
+
+    // Jeśli to była druga karta po przebiciu
+    if (isSecondCard) {
+      console.log(`✅ ${this.getPlayerName(playerId)} zakończył dołożenie drugiej karty`);
+      this.state.waitingForSecondCard = false;
+      this.state.secondCardPlayerId = undefined;
+      this.nextPlayer();
+      return true;
     }
 
     // Po przebiciu gracz musi dołożyć drugą kartę
     if (this.state.table.length > 1 && this.wasBeat(card)) {
-      // Gracz zostaje aktywny dla drugiej karty
-      return true;
+      console.log(`💪 ${this.getPlayerName(playerId)} przebił kartę - musi dołożyć drugą (DOWOLNĄ)!`);
+      this.state.waitingForSecondCard = true;
+      this.state.secondCardPlayerId = playerId;
+      return true; // Gracz zostaje aktywny
     }
+
+    console.log(`👥 Karty pozostałe: ${player.cards.length} (${this.getPlayerName(playerId)})`);
 
     // Przejdź do następnego gracza
     this.nextPlayer();
@@ -210,9 +248,12 @@ export class GameEngine {
     const colors: PlayerColor[] = ['trefl', 'pik', 'kier', 'karo'];
     const startingPlayerIndex = this.state.players.findIndex(p => p.id === startingPlayerId);
 
+    console.log(`🎨 PRZYPISYWANIE KOLORÓW (rozpoczął ${this.getPlayerName(startingPlayerId)}):`);
+
     this.state.players.forEach((player, index) => {
       const colorIndex = (index - startingPlayerIndex + 4) % 4;
       player.assignedColor = colors[colorIndex];
+      console.log(`   ${this.getColorSymbol(player.assignedColor)} ${this.getPlayerName(player.id)} → ${player.assignedColor?.toUpperCase()}`);
     });
 
     this.state.colorsAssigned = true;
@@ -229,21 +270,33 @@ export class GameEngine {
       return false;
     }
 
+    // Jeśli gracz czeka na drugą kartę, nie może wziąć Budy
+    if (this.state.waitingForSecondCard && this.state.secondCardPlayerId === playerId) {
+      console.log(`⚠️ ${this.getPlayerName(playerId)} musi dołożyć drugą kartę - nie może wziąć Budy`);
+      return false;
+    }
+
     // Sprawdź czy gracz może przebić jakąkolwiek kartę
-    const topCard = this.state.table[this.state.table.length - 1];
     return !player.cards.some(card => this.canPlayCard(playerId, card));
   }
 
   public takeBuda(playerId: string): boolean {
     if (!this.canTakeBuda(playerId)) {
+      console.log(`❌ ${this.getPlayerName(playerId)} nie może wziąć Budy`);
       return false;
     }
 
     const player = this.state.players.find(p => p.id === playerId)!;
+    const budaCards = [...this.state.table];
+
+    console.log(`🗂️ ${this.getPlayerName(playerId)} bierze BUDĘ (${budaCards.length} kart):`);
+    budaCards.forEach(card => console.log(`   📄 ${this.formatCard(card)}`));
 
     // Przenieś wszystkie karty ze stołu do ręki gracza
     player.cards.push(...this.state.table);
     this.state.table = [];
+
+    console.log(`📋 ${this.getPlayerName(playerId)} ma teraz ${player.cards.length} kart`);
 
     // Zapisz ruch
     this.state.moves.push({
@@ -251,6 +304,10 @@ export class GameEngine {
       actionType: 'takeBuda',
       timestamp: Date.now()
     });
+
+    // Reset stanu drugiej karty
+    this.state.waitingForSecondCard = false;
+    this.state.secondCardPlayerId = undefined;
 
     // Przejdź do następnego gracza
     this.nextPlayer();
@@ -274,22 +331,30 @@ export class GameEngine {
     if (playersWithCards.length === 1) {
       // Koniec tury - jeden gracz zostaje z kartami
       const loser = playersWithCards[0];
+      console.log(`🏁 KONIEC TURY! ${this.getPlayerName(loser.id)} został z kartami`);
       this.discardLowestCard(loser);
 
       // Nowa tura
       this.state.round++;
       this.state.turn = 1;
       this.state.currentPlayerIndex = (this.state.players.findIndex(p => p.id === loser.id) + 1) % 4;
+      console.log(`🔄 NOWA TURA ${this.state.round} - rozpoczyna ${this.getPlayerName(this.getCurrentPlayer().id)}`);
     }
   }
 
   private discardLowestCard(player: Player): void {
-    if (!player.assignedColor || !player.cards.length) return;
+    if (!player.assignedColor || !player.cards.length) {
+      console.log(`⚠️ ${this.getPlayerName(player.id)} nie ma karty do odrzucenia`);
+      return;
+    }
 
     // Znajdź najniższą kartę swojego koloru
     const ownColorCards = player.cards.filter(c => c.suit === player.assignedColor);
 
-    if (ownColorCards.length === 0) return;
+    if (ownColorCards.length === 0) {
+      console.log(`⚠️ ${this.getPlayerName(player.id)} nie ma kart swojego koloru do odrzucenia`);
+      return;
+    }
 
     // Sortuj karty od najniższej
     ownColorCards.sort((a, b) => {
@@ -300,6 +365,8 @@ export class GameEngine {
     });
 
     const cardToDiscard = ownColorCards[0];
+
+    console.log(`🗑️ ${this.getPlayerName(player.id)} odrzuca ${this.formatCard(cardToDiscard)} (najniższa karta swojego koloru)`);
 
     // Usuń kartę z ręki i dodaj do odrzuconych
     player.cards = player.cards.filter(c => c.id !== cardToDiscard.id);
@@ -315,6 +382,7 @@ export class GameEngine {
 
     // Sprawdź koniec gry
     if (cardToDiscard.rank === 'A') {
+      console.log(`🎊 KONIEC GRY! ${this.getPlayerName(player.id)} musiał odrzucić Asa!`);
       this.state.status = 'finished';
     }
   }
@@ -330,5 +398,43 @@ export class GameEngine {
     }
 
     return player.cards.filter(card => this.canPlayCard(playerId, card));
+  }
+
+  // Helper functions for console logging
+  private getPlayerName(playerId: string): string {
+    const player = this.state.players.find(p => p.id === playerId);
+    return player?.name || playerId;
+  }
+
+  private formatCard(card: CardData): string {
+    const suitSymbols = {
+      'trefl': '♣',
+      'pik': '♠', 
+      'kier': '♥',
+      'karo': '♦'
+    };
+
+    const rankNames = {
+      'J': 'W',
+      'Q': 'D', 
+      'K': 'K',
+      'A': 'A'
+    };
+
+    const rank = rankNames[card.rank as keyof typeof rankNames] || card.rank;
+    const suit = suitSymbols[card.suit];
+
+    return `${rank}${suit}`;
+  }
+
+  private getColorSymbol(color: PlayerColor): string {
+    if (!color) return '⚪';
+    const symbols = {
+      'trefl': '♣',
+      'pik': '♠',
+      'kier': '♥', 
+      'karo': '♦'
+    };
+    return symbols[color] || '⚪';
   }
 }

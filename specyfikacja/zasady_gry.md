@@ -17,8 +17,9 @@ Przygotowanie
    Gracz musi spróbować przebić kartę leżącą na stole:
    wyższą kartą tego samego koloru, lub
    Damą Trefl (która przypisuje kolory graczom – patrz niżej).
-   Jeśli przebije, obowiązkowo dokłada drugą dowolną kartę ze swojej ręki.
+   **WAŻNE: Jeśli przebije, obowiązkowo dokłada drugą kartę ze swojej ręki - ta druga karta może być DOWOLNA (nie musi przebijać pierwszej zagrane przez tego samego gracza).**
    Jeśli nie może przebić, musi wziąć Budę (wszystkie karty ze stołu) i nie zagrywa żadnej karty w tej kolejce.
+   **Uwaga: Podczas dołożenia drugiej karty gracz nie może wziąć Budy - musi zagrać jedną ze swoich kart.**
    Przypisanie kolorów
    Jeśli ktoś zagra Damę Trefl, ustalają się kolory graczy:
    Gracz, który zagrał Damę Trefl → Trefl (atut)

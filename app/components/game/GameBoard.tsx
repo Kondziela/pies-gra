@@ -5,25 +5,41 @@ import Card, { CardData } from './Card';
 import { GameEngine, GameState, Player } from './GameEngine';
 import { useAuth } from '../auth/AuthProvider';
 import ErrorToast from './ErrorToast';
+import { AIManager, DifficultyLevel } from './AIPlayer';
 
 interface GameBoardProps {
   onBack: () => void;
+  difficulty?: DifficultyLevel;
 }
 
-export default function GameBoard({ onBack }: GameBoardProps) {
+export default function GameBoard({ onBack, difficulty }: GameBoardProps) {
+  // Fallback: sprawdź localStorage jeśli difficulty nie został przekazany
+  const actualDifficulty = difficulty || (localStorage.getItem('gameDifficulty') as DifficultyLevel) || 'medium';
   const { user } = useAuth();
+  const [aiManager] = useState(() => new AIManager());
+
   const [gameEngine] = useState(() => {
-    // Mock players for demo
+    // Players: user + 3 AI bots
     const mockPlayers = [
       { id: user?.userId || 'player1', name: user?.username || 'Ty', isHost: true, position: 0 },
-      { id: 'player2', name: 'Bot Anna', isHost: false, position: 1 },
-      { id: 'player3', name: 'Bot Marek', isHost: false, position: 2 },
-      { id: 'player4', name: 'Bot Kasia', isHost: false, position: 3 }
+      { id: 'bot1', name: 'Bot Anna', isHost: false, position: 1 },
+      { id: 'bot2', name: 'Bot Marek', isHost: false, position: 2 },
+      { id: 'bot3', name: 'Bot Kasia', isHost: false, position: 3 }
     ];
 
-    const engine = new GameEngine('demo-game', mockPlayers);
+    const engine = new GameEngine('ai-game', mockPlayers);
     return engine;
   });
+
+  // Inicjalizacja AI botów
+  useEffect(() => {
+    aiManager.addAIPlayer('bot1', actualDifficulty);
+    aiManager.addAIPlayer('bot2', actualDifficulty);
+    aiManager.addAIPlayer('bot3', actualDifficulty);
+
+    // Wyczyść localStorage po użyciu
+    localStorage.removeItem('gameDifficulty');
+  }, [aiManager, actualDifficulty]);
 
   const [gameState, setGameState] = useState<GameState>(gameEngine.getGameState());
   const [selectedCard, setSelectedCard] = useState<CardData | null>(null);
@@ -43,6 +59,19 @@ export default function GameBoard({ onBack }: GameBoardProps) {
   const isMyTurn = gameEngine.getCurrentPlayer().id === (user?.userId || 'player1');
   const canTakeBuda = currentPlayer ? gameEngine.canTakeBuda(currentPlayer.id) : false;
 
+  // Debug info
+  useEffect(() => {
+    if (isMyTurn) {
+      console.log(`🎯 To twoja kolej! Dostępne karty: ${availableCards.length}`);
+      console.log(`📋 Karty na stole: ${gameState.table.length}`);
+      console.log(`🗂️ Możesz wziąć Budę: ${canTakeBuda}`);
+
+      if (availableCards.length === 0 && gameState.table.length > 0) {
+        console.log(`⚠️ Nie masz kart do zagrania - musisz wziąć Budę!`);
+      }
+    }
+  }, [isMyTurn, availableCards.length, gameState.table.length, canTakeBuda]);
+
   const updateAvailableCards = useCallback(() => {
     if (isMyTurn && currentPlayer) {
       const available = gameEngine.getAvailableCards(currentPlayer.id);
@@ -58,10 +87,18 @@ export default function GameBoard({ onBack }: GameBoardProps) {
   }, []);
 
   const handleTakeBuda = useCallback(() => {
-    if (!currentPlayer) return;
+    if (!currentPlayer) {
+      console.log('❌ handleTakeBuda: brak currentPlayer');
+      return;
+    }
+
+    console.log(`👤 ${currentPlayer.name} próbuje wziąć Budę`);
+    console.log(`📊 Stan: isMyTurn=${isMyTurn}, canTakeBuda=${canTakeBuda}, availableCards=${availableCards.length}, tableCards=${gameState.table.length}`);
 
     const success = gameEngine.takeBuda(currentPlayer.id);
     if (success) {
+      console.log(`✅ ${currentPlayer.name} pomyślnie wziął Budę`);
+
       // Animacja zbierania Budy
       setIsAnimatingBuda(true);
 
@@ -71,9 +108,10 @@ export default function GameBoard({ onBack }: GameBoardProps) {
         setIsAnimatingBuda(false);
       }, 1000);
     } else {
+      console.log(`❌ ${currentPlayer.name} nie mógł wziąć Budy`);
       showError('Nie można wziąć Budy w tej sytuacji.');
     }
-  }, [currentPlayer, gameEngine, showError, updateAvailableCards]);
+  }, [currentPlayer, gameEngine, showError, updateAvailableCards, isMyTurn, canTakeBuda, availableCards.length, gameState.table.length]);
 
   const handleCardClick = useCallback((card: CardData) => {
     if (!isMyTurn) {
@@ -102,6 +140,8 @@ export default function GameBoard({ onBack }: GameBoardProps) {
   const handlePlayCard = useCallback(() => {
     if (!selectedCard || !currentPlayer) return;
 
+    console.log(`👤 ${currentPlayer.name} próbuje zagrać kartę`);
+
     const success = gameEngine.playCard(currentPlayer.id, selectedCard);
     if (success) {
       setGameState(gameEngine.getGameState());
@@ -109,6 +149,7 @@ export default function GameBoard({ onBack }: GameBoardProps) {
       setShowConfirmDialog(false);
       updateAvailableCards();
     } else {
+      console.log(`❌ ${currentPlayer.name} nie mógł zagrać karty`);
       showError('Nie można zagrać tej karty. Spróbuj innej.');
       setShowConfirmDialog(false);
     }
@@ -118,8 +159,20 @@ export default function GameBoard({ onBack }: GameBoardProps) {
   useEffect(() => {
     setIsAnimatingDeal(true);
     const dealTimer = setTimeout(() => {
+      console.log('🎮 ROZPOCZĘCIE GRY PIES!');
+      console.log('🃏 Rozdawanie 24 kart (po 6 na gracza)...');
+
       gameEngine.startGame();
-      setGameState(gameEngine.getGameState());
+      const state = gameEngine.getGameState();
+
+      console.log('👥 GRACZE:');
+      state.players.forEach(player => {
+        console.log(`   ${player.name} (${player.cards.length} kart)`);
+      });
+
+      console.log(`🎯 Pierwsza tura rozpoczyna: ${state.players[state.currentPlayerIndex].name} (9♦)`);
+
+      setGameState(state);
       setIsAnimatingDeal(false);
     }, 2000);
 
@@ -154,6 +207,28 @@ export default function GameBoard({ onBack }: GameBoardProps) {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [gameState, isMyTurn, canTakeBuda, currentPlayer, handleTakeBuda, updateAvailableCards]);
+
+  // Automatyczne ruchy AI
+  useEffect(() => {
+    const currentPlayerId = gameEngine.getCurrentPlayer().id;
+
+    if (gameState.status === 'playing' && aiManager.isAIPlayer(currentPlayerId)) {
+      const makeAIMove = async () => {
+        try {
+          const success = await aiManager.makeAIMove(gameEngine, currentPlayerId);
+          if (success) {
+            setGameState(gameEngine.getGameState());
+          }
+        } catch (error) {
+          console.error('AI move failed:', error);
+        }
+      };
+
+      // Opóźnienie aby gracz mógł zobaczyć co się dzieje
+      const aiMoveTimer = setTimeout(makeAIMove, 500);
+      return () => clearTimeout(aiMoveTimer);
+    }
+  }, [gameState, gameEngine, aiManager]);
 
   const handleCardDragStart = useCallback((card: CardData) => (e: React.DragEvent) => {
     if (!isMyTurn || !availableCards.find(c => c.id === card.id)) {
@@ -250,7 +325,13 @@ export default function GameBoard({ onBack }: GameBoardProps) {
         <div className="game-info">
           <span className="round-info">Runda {gameState.round}</span>
           <span className="turn-info">
-            {isMyTurn ? 'Twoja kolej' : `Kolej: ${gameEngine.getCurrentPlayer().name}`}
+            {isMyTurn ? (
+              gameState.waitingForSecondCard && gameState.secondCardPlayerId === currentPlayer?.id 
+                ? 'Dołóż drugą kartę (dowolną)' 
+                : 'Twoja kolej'
+            ) : (
+              `Kolej: ${gameEngine.getCurrentPlayer().name}`
+            )}
           </span>
           {isMyTurn && (
             <div className={`turn-timer ${turnTimer <= 10 ? 'timer-warning' : ''}`}>
@@ -299,12 +380,13 @@ export default function GameBoard({ onBack }: GameBoardProps) {
           </div>
 
           {/* Przycisk Weź Budę */}
-          {canTakeBuda && isMyTurn && (
+          {isMyTurn && gameState.table.length > 0 && availableCards.length === 0 && (
             <button 
               className="take-buda-btn"
               onClick={handleTakeBuda}
+              disabled={!canTakeBuda}
             >
-              🗂️ Weź Budę
+              🗂️ Weź Budę ({gameState.table.length} kart)
             </button>
           )}
         </div>
@@ -349,6 +431,16 @@ export default function GameBoard({ onBack }: GameBoardProps) {
                   disabled={!isMyTurn}
                 >
                   🎯 Zagraj kartę
+                </button>
+              )}
+
+              {isMyTurn && !selectedCard && availableCards.length === 0 && gameState.table.length > 0 && (
+                <button 
+                  className="action-button danger"
+                  onClick={handleTakeBuda}
+                  disabled={!canTakeBuda}
+                >
+                  🗂️ Weź Budę ({gameState.table.length} kart)
                 </button>
               )}
             </div>

@@ -794,6 +794,10 @@ body {
   transform: translateY(-1px);
 }
 
+.action-button.danger:active {
+  transform: translateY(0);
+}
+
 /* Profile Stats */
 .profile-stats {
   background: var(--surface-color);
@@ -1323,11 +1327,24 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   animation: bounce 1s infinite;
+  z-index: 1000;
+  min-width: 140px;
 }
 
-.take-buda-btn:hover {
+.take-buda-btn:hover:not(:disabled) {
   background: #D32F2F;
   transform: translateX(-50%) scale(1.05);
+}
+
+.take-buda-btn:disabled {
+  background: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+  animation: none;
+}
+
+.take-buda-btn:active {
+  transform: translateX(-50%) scale(0.95);
 }
 
 @keyframes bounce {
